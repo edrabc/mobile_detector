@@ -3,6 +3,7 @@ from os import path
 import logging
 import sys
 import time
+import json
 
 import cv2
 
@@ -43,6 +44,8 @@ if __name__ == '__main__':
                         help="path to model frozen graph *.pb file")
     parser.add_argument("--result_path", "-rp", type=str, required=False,
                         default='result.jpg', help="path to result image")
+    parser.add_argument("--classes_path", "-cp", type=str, required=False,
+                        default='result.json', help="path to predicted classes json")
 
     # read arguments from the command line
     args = parser.parse_args()
@@ -67,13 +70,20 @@ if __name__ == '__main__':
     finish_time = time.time()
     logger.info("time spent: {:.4f}".format(finish_time - start_time))
 
+    prediction = []
+
     for obj in result:
         logger.info('coordinates: {} {}. class: "{}". confidence: {:.2f}'.
                     format(obj[0], obj[1], obj[3], obj[2]))
+
+        prediction.append({'class': obj[3], 'confidence': str(obj[2])})
 
         cv2.rectangle(image, obj[0], obj[1], (0, 255, 0), 2)
         cv2.putText(image, '{}: {:.2f}'.format(obj[3], obj[2]),
                     (obj[0][0], obj[0][1] - 5),
                     cv2.FONT_HERSHEY_PLAIN, 1, (0, 255, 0), 2)
+
+    with open(args.classes_path, 'w') as output:
+        json.dump(prediction, output)
 
     cv2.imwrite(args.result_path, cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
